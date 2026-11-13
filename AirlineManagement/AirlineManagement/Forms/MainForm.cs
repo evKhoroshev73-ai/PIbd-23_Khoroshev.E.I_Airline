@@ -6,81 +6,44 @@ namespace AirlineManagement.Forms
 {
     public partial class MainForm : Form
     {
-        private MenuStrip menuStrip;
-        private ToolStripMenuItem dictionariesMenuItem;
-        private ToolStripMenuItem operationsMenuItem;
-        private ToolStripMenuItem reportsMenuItem;
-
-        private ToolStripMenuItem airplanesMenuItem;
-        private ToolStripMenuItem employeesMenuItem;
-        private ToolStripMenuItem flightsMenuItem;
-
-        private ToolStripMenuItem flightExecutionsMenuItem;
-        private ToolStripMenuItem ticketSalesMenuItem;
-
         public MainForm()
         {
             InitializeComponent();
-            InitializeMenu();
+            SetupMenu();
         }
 
-        private void InitializeMenu()
+        private void SetupMenu()
         {
             this.Text = "Авиакомпания — Главное окно";
-            this.Width = 800;
-            this.Height = 500;
+            this.Width = 850;
+            this.Height = 550;
+            this.StartPosition = FormStartPosition.CenterScreen;
 
-            menuStrip = new MenuStrip();
+            var menuStrip = new MenuStrip();
 
-            dictionariesMenuItem = new ToolStripMenuItem("Справочники");
-            operationsMenuItem = new ToolStripMenuItem("Операции");
-            reportsMenuItem = new ToolStripMenuItem("Отчеты");
+            var dictionariesMenu = new ToolStripMenuItem("Справочники");
+            var operationsMenu = new ToolStripMenuItem("Операции");
+            var reportsMenu = new ToolStripMenuItem("Отчеты");
 
-            airplanesMenuItem = new ToolStripMenuItem("Самолеты", null, OnAirplanesClick);
-            employeesMenuItem = new ToolStripMenuItem("Сотрудники", null, OnEmployeesClick);
-            flightsMenuItem = new ToolStripMenuItem("Рейсы", null, OnFlightsClick);
+            dictionariesMenu.DropDownItems.Add(new ToolStripMenuItem("Самолеты", null, (s, e) => OpenForm<AirplanesForm>()));
+            dictionariesMenu.DropDownItems.Add(new ToolStripMenuItem("Сотрудники", null, (s, e) => OpenForm<EmployeesForm>()));
+            dictionariesMenu.DropDownItems.Add(new ToolStripMenuItem("Рейсы", null, (s, e) => OpenForm<FlightsForm>()));
 
-            dictionariesMenuItem.DropDownItems.Add(airplanesMenuItem);
-            dictionariesMenuItem.DropDownItems.Add(employeesMenuItem);
-            dictionariesMenuItem.DropDownItems.Add(flightsMenuItem);
+            operationsMenu.DropDownItems.Add(new ToolStripMenuItem("Выполнение полетов", null, (s, e) => OpenForm<FlightExecutionsForm>()));
+            operationsMenu.DropDownItems.Add(new ToolStripMenuItem("Продажа билетов", null, (s, e) => OpenForm<TicketSaleItemsForm>()));
 
-            flightExecutionsMenuItem = new ToolStripMenuItem("Выполнение полетов", null, OnFlightExecutionsClick);
-            ticketSalesMenuItem = new ToolStripMenuItem("Продажа билетов", null, OnTicketSalesClick);
-
-            operationsMenuItem.DropDownItems.Add(flightExecutionsMenuItem);
-            operationsMenuItem.DropDownItems.Add(ticketSalesMenuItem);
-
-            menuStrip.Items.Add(dictionariesMenuItem);
-            menuStrip.Items.Add(operationsMenuItem);
-            menuStrip.Items.Add(reportsMenuItem); 
+            menuStrip.Items.Add(dictionariesMenu);
+            menuStrip.Items.Add(operationsMenu);
+            menuStrip.Items.Add(reportsMenu);
 
             this.MainMenuStrip = menuStrip;
             this.Controls.Add(menuStrip);
         }
 
-        private void OnAirplanesClick(object sender, EventArgs e)
+        private void OpenForm<T>() where T : Form
         {
-            MessageBox.Show("Открытие формы справочника: Самолеты");
-        }
-
-        private void OnEmployeesClick(object sender, EventArgs e)
-        {
-            MessageBox.Show("Открытие формы справочника: Сотрудники");
-        }
-
-        private void OnFlightsClick(object sender, EventArgs e)
-        {
-            MessageBox.Show("Открытие формы справочника: Рейсы");
-        }
-
-        private void OnFlightExecutionsClick(object sender, EventArgs e)
-        {
-            MessageBox.Show("Открытие формы операции: Выполнение полетов");
-        }
-
-        private void OnTicketSalesClick(object sender, EventArgs e)
-        {
-            MessageBox.Show("Открытие формы операции: Продажа билетов");
+            var form = Program.Container.Resolve<T>();
+            form.ShowDialog();
         }
     }
 }
