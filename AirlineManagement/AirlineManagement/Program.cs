@@ -25,7 +25,7 @@ namespace AirlineManagement
             Container.RegisterType<IFlightExecutionRepository, FlightExecutionRepository>(new Unity.Lifetime.ContainerControlledLifetimeManager());
             Container.RegisterType<ITicketSaleItemRepository, TicketSaleItemRepository>(new Unity.Lifetime.ContainerControlledLifetimeManager());
 
-            Application.Run(new MainForm());
+            Application.Run(Container.Resolve<MainForm>());
         }
     }
 }
