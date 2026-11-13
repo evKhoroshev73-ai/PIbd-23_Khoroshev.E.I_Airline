@@ -1,17 +1,31 @@
+using System;
+using System.Windows.Forms;
+using Unity;
+using AirlineManagement.Repositories.Interfaces;
+using AirlineManagement.Repositories.Implementations;
+using AirlineManagement.Forms;
+
 namespace AirlineManagement
 {
-    internal static class Program
+    static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
+        public static IUnityContainer Container { get; private set; }
+
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.Run(new Form1());
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
+            Container = new UnityContainer();
+
+            Container.RegisterType<IFlightRepository, FlightRepository>(new Unity.Lifetime.ContainerControlledLifetimeManager());
+            Container.RegisterType<IAirplaneRepository, AirplaneRepository>(new Unity.Lifetime.ContainerControlledLifetimeManager());
+            Container.RegisterType<IEmployeeRepository, EmployeeRepository>(new Unity.Lifetime.ContainerControlledLifetimeManager());
+            Container.RegisterType<IFlightExecutionRepository, FlightExecutionRepository>(new Unity.Lifetime.ContainerControlledLifetimeManager());
+            Container.RegisterType<ITicketSaleItemRepository, TicketSaleItemRepository>(new Unity.Lifetime.ContainerControlledLifetimeManager());
+
+            Application.Run(new MainForm());
         }
     }
 }
