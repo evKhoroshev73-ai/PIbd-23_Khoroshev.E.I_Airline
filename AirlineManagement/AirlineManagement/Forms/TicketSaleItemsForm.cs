@@ -31,7 +31,7 @@ namespace AirlineManagement.Forms
 
             btnAdd.Click += (s, e) => {
                 var form = Program.Container.Resolve<TicketSaleItemAddForm>();
-                if (form.ShowDialog() == DialogResult.OK) LoadData();
+                form.ShowDialog();
             };
 
             this.Controls.Add(grid);

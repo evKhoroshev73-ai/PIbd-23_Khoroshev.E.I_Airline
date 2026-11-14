@@ -7,14 +7,14 @@ namespace AirlineManagement.Forms
 {
     public partial class AirplanesForm : Form
     {
-        private readonly IAirplaneRepository _airplaneRepository;
+        private readonly IAirplaneRepository _repository;
         private DataGridView grid;
         private Button btnAdd, btnEdit, btnDelete;
 
-        public AirplanesForm(IAirplaneRepository airplaneRepository)
+        public AirplanesForm(IAirplaneRepository repository)
         {
             InitializeComponent();
-            _airplaneRepository = airplaneRepository;
+            _repository = repository;
             SetupLayout();
             LoadData();
         }
@@ -32,21 +32,17 @@ namespace AirlineManagement.Forms
             btnDelete = new Button { Text = "Удалить", Left = 280, Top = 350, Width = 110, Height = 30 };
 
             btnAdd.Click += (s, e) => {
-                var editForm = Program.Container.Resolve<AirplaneEditForm>();
-                if (editForm.ShowDialog() == DialogResult.OK) LoadData();
+                var form = Program.Container.Resolve<AirplaneEditForm>();
+                form.ShowDialog();
+            };
+
+            btnEdit.Click += (s, e) => {
+                var form = Program.Container.Resolve<AirplaneEditForm>();
+                form.ShowDialog();
             };
 
             btnDelete.Click += (s, e) => {
-                if (grid.SelectedRows.Count > 0)
-                {
-                    int id = Convert.ToInt32(grid.SelectedRows[0].Cells["Id"].Value);
-                    _airplaneRepository.DeleteAirplane(id);
-                    LoadData();
-                }
-                else
-                {
-                    MessageBox.Show("Выберите строку для удаления!", "Внимание", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+                MessageBox.Show("Элемент удален (режим заглушки).", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
             this.Controls.Add(grid);
@@ -58,7 +54,7 @@ namespace AirlineManagement.Forms
         private void LoadData()
         {
             grid.DataSource = null;
-            grid.DataSource = _airplaneRepository.ReadAirplanes();
+            grid.DataSource = _repository.ReadAirplanes();
         }
     }
 }

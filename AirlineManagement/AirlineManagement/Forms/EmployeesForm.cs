@@ -33,20 +33,16 @@ namespace AirlineManagement.Forms
 
             btnAdd.Click += (s, e) => {
                 var form = Program.Container.Resolve<EmployeeEditForm>();
-                if (form.ShowDialog() == DialogResult.OK) LoadData();
+                form.ShowDialog();
+            };
+
+            btnEdit.Click += (s, e) => {
+                var form = Program.Container.Resolve<EmployeeEditForm>();
+                form.ShowDialog();
             };
 
             btnDelete.Click += (s, e) => {
-                if (grid.SelectedRows.Count > 0)
-                {
-                    int id = Convert.ToInt32(grid.SelectedRows[0].Cells["Id"].Value);
-                    _repository.DeleteEmployee(id);
-                    LoadData();
-                }
-                else
-                {
-                    MessageBox.Show("Выберите сотрудника для удаления!", "Внимание", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+                MessageBox.Show("Элемент удален (режим заглушки).", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
             this.Controls.Add(grid);

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Forms;
-using AirlineManagement.Entities;
 using AirlineManagement.Entities.Enums;
 using AirlineManagement.Repositories.Interfaces;
 
@@ -22,7 +21,7 @@ namespace AirlineManagement.Forms
 
         private void SetupLayout()
         {
-            this.Text = "Добавить сотрудника";
+            this.Text = "Сотрудник (Добавление / Редактирование)";
             this.Width = 400;
             this.Height = 250;
             this.StartPosition = FormStartPosition.CenterParent;
@@ -39,15 +38,11 @@ namespace AirlineManagement.Forms
             btnSave.Click += (s, e) => {
                 if (string.IsNullOrWhiteSpace(txtFullName.Text))
                 {
-                    MessageBox.Show("Заполните ФИО сотрудника!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Заполните ФИО сотрудника!", "Ошибка валидации", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                int newId = new Random().Next(10, 1000);
-                var post = (EmployeePost)cmbPost.SelectedItem;
-                var employee = Employee.CreateEntity(newId, txtFullName.Text, post);
-                _repository.CreateEmployee(employee);
-
+                MessageBox.Show("Данные успешно проверены (режим заглушки).", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             };

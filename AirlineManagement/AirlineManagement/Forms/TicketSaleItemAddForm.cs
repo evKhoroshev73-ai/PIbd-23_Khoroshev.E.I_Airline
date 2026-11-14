@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Forms;
-using AirlineManagement.Entities;
 using AirlineManagement.Repositories.Interfaces;
 
 namespace AirlineManagement.Forms
@@ -37,16 +36,15 @@ namespace AirlineManagement.Forms
 
             btnSave = new Button { Text = "Сохранить", Left = 140, Top = 150, Width = 100, Height = 30 };
             btnSave.Click += (s, e) => {
-                if (!int.TryParse(txtFlightId.Text, out int fId) || !int.TryParse(txtCount.Text, out int count) || !decimal.TryParse(txtPrice.Text, out decimal price))
+                if (!int.TryParse(txtFlightId.Text, out _) ||
+                    !int.TryParse(txtCount.Text, out _) ||
+                    !decimal.TryParse(txtPrice.Text, out _))
                 {
-                    MessageBox.Show("Проверьте корректность числовых полей!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Проверьте корректность числовых полей!", "Ошибка валидации", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                int newId = new Random().Next(10, 1000);
-                var item = TicketSaleItem.CreateElement(newId, fId, count, price);
-                _repository.CreateTicketSaleItem(item);
-
+                MessageBox.Show("Данные успешно проверены (режим заглушки).", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             };

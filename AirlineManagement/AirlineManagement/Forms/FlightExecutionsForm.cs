@@ -30,8 +30,8 @@ namespace AirlineManagement.Forms
             btnAdd = new Button { Text = "Добавить выполнение", Left = 20, Top = 350, Width = 180, Height = 30 };
 
             btnAdd.Click += (s, e) => {
-                var addForm = Program.Container.Resolve<FlightExecutionAddForm>();
-                if (addForm.ShowDialog() == DialogResult.OK) LoadData();
+                var form = Program.Container.Resolve<FlightExecutionAddForm>();
+                form.ShowDialog();
             };
 
             this.Controls.Add(grid);

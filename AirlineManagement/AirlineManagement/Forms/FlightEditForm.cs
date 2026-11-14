@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Forms;
-using AirlineManagement.Entities;
 using AirlineManagement.Repositories.Interfaces;
 
 namespace AirlineManagement.Forms
@@ -21,7 +20,7 @@ namespace AirlineManagement.Forms
 
         private void SetupLayout()
         {
-            this.Text = "Добавить рейс";
+            this.Text = "Рейс (Добавление / Редактирование)";
             this.Width = 420;
             this.Height = 300;
             this.StartPosition = FormStartPosition.CenterParent;
@@ -43,14 +42,11 @@ namespace AirlineManagement.Forms
             btnSave.Click += (s, e) => {
                 if (string.IsNullOrWhiteSpace(txtNumber.Text) || string.IsNullOrWhiteSpace(txtDestination.Text))
                 {
-                    MessageBox.Show("Заполните все поля!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Заполните все поля!", "Ошибка валидации", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                int newId = new Random().Next(10, 1000);
-                var flight = Flight.CreateEntity(newId, txtNumber.Text, txtDestination.Text, dtpDeparture.Value.TimeOfDay, dtpArrival.Value.TimeOfDay);
-                _repository.CreateFlight(flight);
-
+                MessageBox.Show("Данные успешно проверены (режим заглушки).", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             };
