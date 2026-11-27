@@ -1,5 +1,6 @@
-﻿using System;
+using System.Linq;
 using System.Windows.Forms;
+using AirlineManagement.Entities;
 using AirlineManagement.Repositories.Interfaces;
 
 namespace AirlineManagement.Forms
@@ -7,61 +8,71 @@ namespace AirlineManagement.Forms
     public partial class TicketSaleItemAddForm : Form
     {
         private readonly ITicketSaleItemRepository _repository;
-        private TextBox txtFlightId, txtEmployeeId, txtCount, txtPrice;
-        private Button btnSave;
+        private readonly IFlightRepository _flights;
+        private readonly IEmployeeRepository _employees;
+        private ComboBox cmbFlight = null!, cmbEmployee = null!;
+        private TextBox txtCount = null!, txtPrice = null!;
+        private Button btnSave = null!;
 
-        public TicketSaleItemAddForm(ITicketSaleItemRepository repository)
+        public TicketSaleItemAddForm(ITicketSaleItemRepository repository, IFlightRepository flights,
+            IEmployeeRepository employees)
         {
             InitializeComponent();
             _repository = repository;
+            _flights = flights;
+            _employees = employees;
             SetupLayout();
+            Shown += (_, _) => LoadChoices();
         }
 
         private void SetupLayout()
         {
-            this.Text = "Добавить продажу билетов";
-            this.Width = 420;
-            this.Height = 290;
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            Text = "Добавить продажу билетов";
+            cmbFlight = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, DisplayMember = nameof(Flight.FlightNumber) };
+            cmbEmployee = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, DisplayMember = nameof(Employee.FullName) };
+            txtCount = new TextBox();
+            txtPrice = new TextBox();
+            btnSave = new Button { Text = "Сохранить", Enabled = false };
+            btnSave.Click += (_, _) => Save();
 
-            var lblFlight = new Label { Text = "ID Рейса:", Left = 20, Top = 20, Width = 120 };
-            txtFlightId = new TextBox { Left = 150, Top = 20, Width = 220 };
+            FormLayout.ConfigureEditor(this, new System.Drawing.Size(560, 320), btnSave,
+                ("Рейс:", cmbFlight),
+                ("Сотрудник:", cmbEmployee),
+                ("Кол-во билетов:", txtCount),
+                ("Цена за билет:", txtPrice));
+        }
 
-            var lblEmployee = new Label { Text = "ID Сотрудника:", Left = 20, Top = 60, Width = 120 };
-            txtEmployeeId = new TextBox { Left = 150, Top = 60, Width = 220 };
+        private void LoadChoices()
+        {
+            if (!FormAction.Try(this, "Не удалось загрузить рейсы или сотрудников. Проверьте подключение к базе данных.", () =>
+            {
+                cmbFlight.DataSource = _flights.ReadFlights().ToList();
+                cmbEmployee.DataSource = _employees.ReadEmployees().ToList();
+            }))
+                return;
 
-            var lblCount = new Label { Text = "Кол-во билетов:", Left = 20, Top = 100, Width = 120 };
-            txtCount = new TextBox { Left = 150, Top = 100, Width = 220 };
+            btnSave.Enabled = cmbFlight.Items.Count > 0 && cmbEmployee.Items.Count > 0;
+            if (!btnSave.Enabled)
+                MessageBox.Show(this, "Сначала добавьте хотя бы один рейс и сотрудника.", "Нет данных", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
 
-            var lblPrice = new Label { Text = "Цена за билет:", Left = 20, Top = 140, Width = 120 };
-            txtPrice = new TextBox { Left = 150, Top = 140, Width = 220 };
+        private void Save()
+        {
+            if (cmbFlight.SelectedItem is not Flight flight || cmbEmployee.SelectedItem is not Employee employee ||
+                !int.TryParse(txtCount.Text, out var tickets) || tickets < 0 ||
+                !decimal.TryParse(txtPrice.Text, out var price) || price < 0)
+            {
+                MessageBox.Show(this, "Выберите рейс и сотрудника. Количество билетов и цена должны быть неотрицательными.",
+                    "Ошибка валидации", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            btnSave = new Button { Text = "Сохранить", Left = 150, Top = 195, Width = 100, Height = 30 };
-            btnSave.Click += (s, e) => {
-                if (!int.TryParse(txtFlightId.Text, out _) ||
-                    !int.TryParse(txtEmployeeId.Text, out _) ||
-                    !int.TryParse(txtCount.Text, out _) ||
-                    !decimal.TryParse(txtPrice.Text, out _))
-                {
-                    MessageBox.Show("Проверьте корректность числовых полей!", "Ошибка валидации", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
+            if (!FormAction.Try(this, "Не удалось сохранить продажу билетов.", () =>
+                _repository.CreateTicketSaleItem(TicketSaleItem.CreateElement(0, flight.Id, employee.Id, tickets, price))))
+                return;
 
-                MessageBox.Show("Данные успешно проверены (режим заглушки).", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                this.DialogResult = DialogResult.OK;
-                this.Close();
-            };
-
-            this.Controls.Add(lblFlight);
-            this.Controls.Add(txtFlightId);
-            this.Controls.Add(lblEmployee);
-            this.Controls.Add(txtEmployeeId);
-            this.Controls.Add(lblCount);
-            this.Controls.Add(txtCount);
-            this.Controls.Add(lblPrice);
-            this.Controls.Add(txtPrice);
-            this.Controls.Add(btnSave);
+            DialogResult = DialogResult.OK;
+            Close();
         }
     }
 }

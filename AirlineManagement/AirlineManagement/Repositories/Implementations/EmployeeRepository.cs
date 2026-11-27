@@ -1,39 +1,29 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using AirlineManagement.Data;
 using AirlineManagement.Entities;
 using AirlineManagement.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AirlineManagement.Repositories.Implementations
 {
     public class EmployeeRepository : IEmployeeRepository
     {
-        private readonly List<Employee> _employees = new List<Employee>();
+        private readonly RepositoryOperations<Employee> _operations;
 
-        public IEnumerable<Employee> ReadEmployees() => _employees;
-
-        public Employee ReadEmployeeById(int id) => _employees.FirstOrDefault(e => e.Id == id);
-
-        public void CreateEmployee(Employee employee)
+        public EmployeeRepository(IDbContextFactory<DataContext> contextFactory, ILogger<EmployeeRepository> logger)
         {
-            if (employee != null)
-                _employees.Add(employee);
+            _operations = new(contextFactory, logger, entity => entity.Id);
         }
 
-        public void UpdateEmployee(Employee employee)
-        {
-            var existing = ReadEmployeeById(employee.Id);
-            if (existing != null)
-            {
-                _employees.Remove(existing);
-                _employees.Add(employee);
-            }
-        }
+        public IEnumerable<Employee> ReadEmployees() => _operations.ReadAll(nameof(ReadEmployees));
 
-        public void DeleteEmployee(int id)
-        {
-            var employee = ReadEmployeeById(id);
-            if (employee != null)
-                _employees.Remove(employee);
-        }
+        // Existing interfaces declare a non-null return, but a missing row historically returns null.
+        public Employee ReadEmployeeById(int id) => _operations.ReadById(nameof(ReadEmployeeById), id)!;
+
+        public void CreateEmployee(Employee employee) => _operations.Create(nameof(CreateEmployee), employee);
+
+        public void UpdateEmployee(Employee employee) => _operations.Update(nameof(UpdateEmployee), employee);
+
+        public void DeleteEmployee(int id) => _operations.Delete(nameof(DeleteEmployee), id);
     }
 }

@@ -1,12 +1,17 @@
-﻿using System;
+using System;
+using System.ComponentModel.DataAnnotations;
 using AirlineManagement.Entities.Enums;
 
 namespace AirlineManagement.Entities
 {
     public class Employee
     {
+        protected Employee() { }
+
+        [Key]
         public int Id { get; private set; }
-        public string FullName { get; private set; }
+        [Required]
+        public string FullName { get; private set; } = null!;
         public EmployeePost Post { get; private set; }
 
         public static Employee CreateEntity(int id, string fullName, EmployeePost post)

@@ -1,39 +1,29 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using AirlineManagement.Data;
 using AirlineManagement.Entities;
 using AirlineManagement.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AirlineManagement.Repositories.Implementations
 {
     public class FlightRepository : IFlightRepository
     {
-        private readonly List<Flight> _flights = new List<Flight>();
+        private readonly RepositoryOperations<Flight> _operations;
 
-        public IEnumerable<Flight> ReadFlights() => _flights;
-
-        public Flight ReadFlightById(int id) => _flights.FirstOrDefault(f => f.Id == id);
-
-        public void CreateFlight(Flight flight)
+        public FlightRepository(IDbContextFactory<DataContext> contextFactory, ILogger<FlightRepository> logger)
         {
-            if (flight != null)
-                _flights.Add(flight);
+            _operations = new(contextFactory, logger, entity => entity.Id);
         }
 
-        public void UpdateFlight(Flight flight)
-        {
-            var existing = ReadFlightById(flight.Id);
-            if (existing != null)
-            {
-                _flights.Remove(existing);
-                _flights.Add(flight);
-            }
-        }
+        public IEnumerable<Flight> ReadFlights() => _operations.ReadAll(nameof(ReadFlights));
 
-        public void DeleteFlight(int id)
-        {
-            var flight = ReadFlightById(id);
-            if (flight != null)
-                _flights.Remove(flight);
-        }
+        // Existing interfaces declare a non-null return, but a missing row historically returns null.
+        public Flight ReadFlightById(int id) => _operations.ReadById(nameof(ReadFlightById), id)!;
+
+        public void CreateFlight(Flight flight) => _operations.Create(nameof(CreateFlight), flight);
+
+        public void UpdateFlight(Flight flight) => _operations.Update(nameof(UpdateFlight), flight);
+
+        public void DeleteFlight(int id) => _operations.Delete(nameof(DeleteFlight), id);
     }
 }

@@ -1,12 +1,18 @@
-﻿using System;
+using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace AirlineManagement.Entities
 {
     public class Flight
     {
+        protected Flight() { }
+
+        [Key]
         public int Id { get; private set; }
-        public string FlightNumber { get; private set; }
-        public string Destination { get; private set; }
+        [Required]
+        public string FlightNumber { get; private set; } = null!;
+        [Required]
+        public string Destination { get; private set; } = null!;
         public TimeSpan DepartureTime { get; private set; }
         public TimeSpan ArrivalTime { get; private set; }
 
