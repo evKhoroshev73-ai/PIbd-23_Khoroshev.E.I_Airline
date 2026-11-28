@@ -1,5 +1,8 @@
-﻿using System;
+using System;
+using System.Linq;
 using System.Windows.Forms;
+using AirlineManagement.Entities;
+using AirlineManagement.Entities.Enums;
 using AirlineManagement.Repositories.Interfaces;
 
 namespace AirlineManagement.Forms
@@ -7,67 +10,109 @@ namespace AirlineManagement.Forms
     public partial class FlightExecutionAddForm : Form
     {
         private readonly IFlightExecutionRepository _repository;
-        private TextBox txtFlightId, txtAirplaneId, txtEmployeeId, txtSeats;
-        private DateTimePicker dtpDate;
-        private Button btnSave;
+        private readonly IFlightRepository _flights;
+        private readonly IAirplaneRepository _airplanes;
+        private readonly IEmployeeRepository _employees;
+        private ComboBox cmbFlight = null!, cmbAirplane = null!, cmbEmployee = null!;
+        private CheckedListBox crew = null!;
+        private TextBox txtSeats = null!;
+        private DateTimePicker dtpDate = null!;
+        private Button btnSave = null!;
+        private Employee[] _crewChoices = Array.Empty<Employee>();
 
-        public FlightExecutionAddForm(IFlightExecutionRepository repository)
+        public FlightExecutionAddForm(IFlightExecutionRepository repository, IFlightRepository flights,
+            IAirplaneRepository airplanes, IEmployeeRepository employees)
         {
             InitializeComponent();
             _repository = repository;
+            _flights = flights;
+            _airplanes = airplanes;
+            _employees = employees;
             SetupLayout();
+            Shown += (_, _) => LoadChoices();
         }
 
         private void SetupLayout()
         {
-            this.Text = "Добавить выполнение полета";
-            this.Width = 420;
-            this.Height = 320;
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-
-            var lblFlight = new Label { Text = "ID Рейса:", Left = 20, Top = 20, Width = 120 };
-            txtFlightId = new TextBox { Left = 150, Top = 20, Width = 220 };
-
-            var lblPlane = new Label { Text = "ID Самолета:", Left = 20, Top = 60, Width = 120 };
-            txtAirplaneId = new TextBox { Left = 150, Top = 60, Width = 220 };
-
-            var lblEmployee = new Label { Text = "ID Сотрудника:", Left = 20, Top = 100, Width = 120 };
-            txtEmployeeId = new TextBox { Left = 150, Top = 100, Width = 220 };
-
-            var lblSeats = new Label { Text = "Занято мест:", Left = 20, Top = 140, Width = 120 };
-            txtSeats = new TextBox { Left = 150, Top = 140, Width = 220 };
-
-            var lblDate = new Label { Text = "Дата полета:", Left = 20, Top = 180, Width = 120 };
-            dtpDate = new DateTimePicker { Left = 150, Top = 180, Width = 220, Format = DateTimePickerFormat.Short };
-
-            btnSave = new Button { Text = "Сохранить", Left = 150, Top = 230, Width = 100, Height = 30 };
-            btnSave.Click += (s, e) => {
-                if (!int.TryParse(txtFlightId.Text, out _) ||
-                    !int.TryParse(txtAirplaneId.Text, out _) ||
-                    !int.TryParse(txtEmployeeId.Text, out _) ||
-                    !int.TryParse(txtSeats.Text, out _))
-                {
-                    MessageBox.Show("Проверьте корректность числовых полей!", "Ошибка валидации", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                MessageBox.Show("Данные успешно проверены (режим заглушки).", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                this.DialogResult = DialogResult.OK;
-                this.Close();
+            Text = "Добавить выполнение полета";
+            cmbFlight = CreateChoice(nameof(Flight.FlightNumber));
+            cmbAirplane = CreateChoice(nameof(Airplane.Model));
+            cmbEmployee = CreateChoice(nameof(Employee.FullName));
+            txtSeats = new TextBox();
+            dtpDate = new DateTimePicker { Format = DateTimePickerFormat.Short };
+            crew = new CheckedListBox
+            {
+                MinimumSize = new System.Drawing.Size(0, 105),
+                Height = 115,
+                CheckOnClick = true,
+                DisplayMember = nameof(Employee.FullName)
             };
+            cmbEmployee.SelectedIndexChanged += (_, _) => RefreshCrewChoices();
+            btnSave = new Button { Text = "Сохранить", Enabled = false };
+            btnSave.Click += (_, _) => Save();
 
-            this.Controls.Add(lblFlight);
-            this.Controls.Add(txtFlightId);
-            this.Controls.Add(lblPlane);
-            this.Controls.Add(txtAirplaneId);
-            this.Controls.Add(lblEmployee);
-            this.Controls.Add(txtEmployeeId);
-            this.Controls.Add(lblSeats);
-            this.Controls.Add(txtSeats);
-            this.Controls.Add(lblDate);
-            this.Controls.Add(dtpDate);
-            this.Controls.Add(btnSave);
+            FormLayout.ConfigureEditor(this, new System.Drawing.Size(610, 440), btnSave,
+                ("Рейс:", cmbFlight),
+                ("Самолет:", cmbAirplane),
+                ("Ответственный:", cmbEmployee),
+                ("Занято мест:", txtSeats),
+                ("Дата полета:", dtpDate),
+                ("Доп. экипаж:", crew));
+        }
+
+        private static ComboBox CreateChoice(string displayMember) => new()
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            DisplayMember = displayMember
+        };
+
+        private void LoadChoices()
+        {
+            if (!FormAction.Try(this, "Не удалось загрузить рейсы, самолеты или сотрудников. Проверьте подключение к базе данных.", () =>
+            {
+                cmbFlight.DataSource = _flights.ReadFlights().ToList();
+                cmbAirplane.DataSource = _airplanes.ReadAirplanes().ToList();
+                _crewChoices = _employees.ReadEmployees().ToArray();
+                cmbEmployee.DataSource = _crewChoices;
+                RefreshCrewChoices();
+            }))
+                return;
+
+            btnSave.Enabled = cmbFlight.Items.Count > 0 && cmbAirplane.Items.Count > 0 && cmbEmployee.Items.Count > 0;
+            if (!btnSave.Enabled)
+                MessageBox.Show(this, "Сначала добавьте хотя бы один рейс, самолет и сотрудника.", "Нет данных", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void RefreshCrewChoices()
+        {
+            var primary = cmbEmployee.SelectedItem as Employee;
+            var checkedIds = crew.CheckedItems.Cast<Employee>().Select(employee => employee.Id).ToHashSet();
+            crew.Items.Clear();
+            foreach (var employee in _crewChoices.Where(employee => employee.Id != primary?.Id))
+                crew.Items.Add(employee, checkedIds.Contains(employee.Id));
+        }
+
+        private void Save()
+        {
+            if (cmbFlight.SelectedItem is not Flight flight || cmbAirplane.SelectedItem is not Airplane airplane ||
+                cmbEmployee.SelectedItem is not Employee employee || !int.TryParse(txtSeats.Text, out var seats) ||
+                seats < 0 || seats > airplane.Capacity)
+            {
+                MessageBox.Show(this, "Выберите рейс, самолет и ответственного. Число занятых мест не должно превышать вместимость самолета.",
+                    "Ошибка валидации", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var date = dtpDate.Value.Date;
+            var days = (DaysOfWeekFlag)(1 << (((int)date.DayOfWeek + 6) % 7));
+            var crewIds = crew.CheckedItems.Cast<Employee>().Select(member => member.Id).ToArray();
+            if (!FormAction.Try(this, "Не удалось сохранить выполнение полета.", () =>
+                _repository.CreateFlightExecution(FlightExecution.CreateOperation(0, flight.Id, airplane.Id,
+                    employee.Id, days, seats, date, crewIds))))
+                return;
+
+            DialogResult = DialogResult.OK;
+            Close();
         }
     }
 }

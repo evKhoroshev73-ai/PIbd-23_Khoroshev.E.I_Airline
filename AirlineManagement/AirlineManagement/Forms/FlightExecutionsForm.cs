@@ -1,4 +1,5 @@
-﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Windows.Forms;
 using AirlineManagement.Repositories.Interfaces;
 using Unity;
@@ -16,32 +17,44 @@ namespace AirlineManagement.Forms
             InitializeComponent();
             _repository = repository;
             SetupLayout();
-            LoadData();
+            Shown += (_, _) => LoadData();
         }
 
+        [MemberNotNull(nameof(grid), nameof(btnAdd))]
         private void SetupLayout()
         {
             this.Text = "Операция: Выполнение полетов";
-            this.Width = 750;
-            this.Height = 450;
-            this.StartPosition = FormStartPosition.CenterParent;
 
-            grid = new DataGridView { Dock = DockStyle.Top, Height = 330, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill, ReadOnly = true };
-            btnAdd = new Button { Text = "Добавить выполнение", Left = 20, Top = 350, Width = 180, Height = 30 };
+            grid = new DataGridView { AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill, ReadOnly = true, AllowUserToAddRows = false };
+            btnAdd = new Button { Text = "Добавить выполнение" };
 
-            btnAdd.Click += (s, e) => {
-                var form = Program.Container.Resolve<FlightExecutionAddForm>();
-                form.ShowDialog();
+            btnAdd.Click += (s, e) =>
+            {
+                bool saved = false;
+                if (FormAction.Try(this, "Не удалось открыть форму добавления записи.", () =>
+                {
+                    using var form = Program.Container.Resolve<FlightExecutionAddForm>();
+                    saved = form.ShowDialog(this) == DialogResult.OK;
+                }) && saved)
+                    LoadData();
             };
 
-            this.Controls.Add(grid);
-            this.Controls.Add(btnAdd);
+            FormLayout.ConfigureList(this, grid, btnAdd);
         }
 
         private void LoadData()
         {
-            grid.DataSource = null;
-            grid.DataSource = _repository.ReadFlightExecutions();
+            FormAction.Try(this, "Не удалось загрузить записи. Проверьте подключение к базе данных.", () =>
+                grid.DataSource = _repository.ReadFlightExecutions().Select(execution => new
+                {
+                    Код = execution.Id,
+                    Рейс = execution.FlightId,
+                    Самолет = execution.AirplaneId,
+                    Ответственный = execution.EmployeeId,
+                    Экипаж = string.Join(", ", execution.CrewMembers.Select(member => member.EmployeeId).OrderBy(id => id)),
+                    Мест = execution.OccupiedSeats,
+                    Дата = execution.FlightDate.ToShortDateString()
+                }).ToList());
         }
     }
 }

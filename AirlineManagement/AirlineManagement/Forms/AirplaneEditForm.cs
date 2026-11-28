@@ -1,5 +1,7 @@
-﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System;
 using System.Windows.Forms;
+using AirlineManagement.Entities;
 using AirlineManagement.Repositories.Interfaces;
 
 namespace AirlineManagement.Forms
@@ -7,6 +9,7 @@ namespace AirlineManagement.Forms
     public partial class AirplaneEditForm : Form
     {
         private readonly IAirplaneRepository _repository;
+        private int _id;
         private TextBox txtModel;
         private TextBox txtCapacity;
         private Button btnSave;
@@ -18,39 +21,44 @@ namespace AirlineManagement.Forms
             SetupLayout();
         }
 
+        public void SetEntry(Airplane item)
+        {
+            _id = item.Id;
+            txtModel.Text = item.Model;
+            txtCapacity.Text = item.Capacity.ToString();
+        }
+
+        [MemberNotNull(nameof(txtModel), nameof(txtCapacity), nameof(btnSave))]
         private void SetupLayout()
         {
-            this.Text = "Самолет (Добавление / Редактирование)";
-            this.Width = 400;
-            this.Height = 250;
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-
-            var lblModel = new Label { Text = "Модель:", Left = 20, Top = 20, Width = 100 };
-            txtModel = new TextBox { Left = 130, Top = 20, Width = 220 };
-
-            var lblCapacity = new Label { Text = "Вместимость:", Left = 20, Top = 60, Width = 100 };
-            txtCapacity = new TextBox { Left = 130, Top = 60, Width = 220 };
-
-            btnSave = new Button { Text = "Сохранить", Left = 130, Top = 120, Width = 100, Height = 30 };
+            Text = "Самолет (Добавление / Редактирование)";
+            txtModel = new TextBox();
+            txtCapacity = new TextBox();
+            btnSave = new Button { Text = "Сохранить" };
 
             btnSave.Click += (s, e) => {
-                if (string.IsNullOrWhiteSpace(txtModel.Text) || !int.TryParse(txtCapacity.Text, out _))
+                if (string.IsNullOrWhiteSpace(txtModel.Text) || (!int.TryParse(txtCapacity.Text, out var capacity) || capacity <= 0))
                 {
                     MessageBox.Show("Заполните корректно все поля!", "Ошибка валидации", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                MessageBox.Show("Данные успешно проверены (режим заглушки).", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (!FormAction.Try(this, "Не удалось сохранить запись.", () =>
+                {
+                    var item = Airplane.CreateEntity(_id, txtModel.Text.Trim(), capacity);
+                    if (_id == 0)
+                        _repository.CreateAirplane(item);
+                    else
+                        _repository.UpdateAirplane(item);
+                }))
+                    return;
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             };
 
-            this.Controls.Add(lblModel);
-            this.Controls.Add(txtModel);
-            this.Controls.Add(lblCapacity);
-            this.Controls.Add(txtCapacity);
-            this.Controls.Add(btnSave);
+            FormLayout.ConfigureEditor(this, new System.Drawing.Size(530, 260), btnSave,
+                ("Модель:", txtModel),
+                ("Вместимость:", txtCapacity));
         }
     }
 }

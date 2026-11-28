@@ -1,11 +1,16 @@
-﻿using System;
+using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace AirlineManagement.Entities
 {
     public class Airplane
     {
+        protected Airplane() { }
+
+        [Key]
         public int Id { get; private set; }
-        public string Model { get; private set; }
+        [Required]
+        public string Model { get; private set; } = null!;
         public int Capacity { get; private set; }
 
         public static Airplane CreateEntity(int id, string model, int capacity)

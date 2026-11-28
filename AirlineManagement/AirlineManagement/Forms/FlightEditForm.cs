@@ -1,5 +1,7 @@
-﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System;
 using System.Windows.Forms;
+using AirlineManagement.Entities;
 using AirlineManagement.Repositories.Interfaces;
 
 namespace AirlineManagement.Forms
@@ -7,6 +9,7 @@ namespace AirlineManagement.Forms
     public partial class FlightEditForm : Form
     {
         private readonly IFlightRepository _repository;
+        private int _id;
         private TextBox txtNumber, txtDestination;
         private DateTimePicker dtpDeparture, dtpArrival;
         private Button btnSave;
@@ -18,27 +21,24 @@ namespace AirlineManagement.Forms
             SetupLayout();
         }
 
+        public void SetEntry(Flight item)
+        {
+            _id = item.Id;
+            txtNumber.Text = item.FlightNumber;
+            txtDestination.Text = item.Destination;
+            dtpDeparture.Value = DateTime.Today.Add(item.DepartureTime);
+            dtpArrival.Value = DateTime.Today.Add(item.ArrivalTime);
+        }
+
+        [MemberNotNull(nameof(txtNumber), nameof(txtDestination), nameof(dtpDeparture), nameof(dtpArrival), nameof(btnSave))]
         private void SetupLayout()
         {
-            this.Text = "Рейс (Добавление / Редактирование)";
-            this.Width = 420;
-            this.Height = 300;
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-
-            var lblNum = new Label { Text = "Номер рейса:", Left = 20, Top = 20, Width = 120 };
-            txtNumber = new TextBox { Left = 150, Top = 20, Width = 220 };
-
-            var lblDest = new Label { Text = "Пункт назначения:", Left = 20, Top = 60, Width = 120 };
-            txtDestination = new TextBox { Left = 150, Top = 60, Width = 220 };
-
-            var lblDep = new Label { Text = "Время вылета:", Left = 20, Top = 100, Width = 120 };
-            dtpDeparture = new DateTimePicker { Left = 150, Top = 100, Width = 220, Format = DateTimePickerFormat.Time, ShowUpDown = true };
-
-            var lblArr = new Label { Text = "Время прилета:", Left = 20, Top = 140, Width = 120 };
-            dtpArrival = new DateTimePicker { Left = 150, Top = 140, Width = 220, Format = DateTimePickerFormat.Time, ShowUpDown = true };
-
-            btnSave = new Button { Text = "Сохранить", Left = 150, Top = 200, Width = 100, Height = 30 };
+            Text = "Рейс (Добавление / Редактирование)";
+            txtNumber = new TextBox();
+            txtDestination = new TextBox();
+            dtpDeparture = new DateTimePicker { Format = DateTimePickerFormat.Time, ShowUpDown = true };
+            dtpArrival = new DateTimePicker { Format = DateTimePickerFormat.Time, ShowUpDown = true };
+            btnSave = new Button { Text = "Сохранить" };
             btnSave.Click += (s, e) => {
                 if (string.IsNullOrWhiteSpace(txtNumber.Text) || string.IsNullOrWhiteSpace(txtDestination.Text))
                 {
@@ -46,20 +46,24 @@ namespace AirlineManagement.Forms
                     return;
                 }
 
-                MessageBox.Show("Данные успешно проверены (режим заглушки).", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (!FormAction.Try(this, "Не удалось сохранить запись.", () =>
+                {
+                    var item = Flight.CreateEntity(_id, txtNumber.Text.Trim(), txtDestination.Text.Trim(), dtpDeparture.Value.TimeOfDay, dtpArrival.Value.TimeOfDay);
+                    if (_id == 0)
+                        _repository.CreateFlight(item);
+                    else
+                        _repository.UpdateFlight(item);
+                }))
+                    return;
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             };
 
-            this.Controls.Add(lblNum);
-            this.Controls.Add(txtNumber);
-            this.Controls.Add(lblDest);
-            this.Controls.Add(txtDestination);
-            this.Controls.Add(lblDep);
-            this.Controls.Add(dtpDeparture);
-            this.Controls.Add(lblArr);
-            this.Controls.Add(dtpArrival);
-            this.Controls.Add(btnSave);
+            FormLayout.ConfigureEditor(this, new System.Drawing.Size(560, 320), btnSave,
+                ("Номер рейса:", txtNumber),
+                ("Пункт назначения:", txtDestination),
+                ("Время вылета:", dtpDeparture),
+                ("Время прилета:", dtpArrival));
         }
     }
 }

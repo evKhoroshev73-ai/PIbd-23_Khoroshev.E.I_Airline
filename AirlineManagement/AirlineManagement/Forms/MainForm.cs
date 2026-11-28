@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows.Forms;
 using Unity;
 
@@ -15,9 +15,7 @@ namespace AirlineManagement.Forms
         private void SetupMenu()
         {
             this.Text = "Авиакомпания — Главное окно";
-            this.Width = 850;
-            this.Height = 550;
-            this.StartPosition = FormStartPosition.CenterScreen;
+            FormLayout.ConfigureMain(this);
 
             var menuStrip = new MenuStrip();
 
@@ -42,8 +40,11 @@ namespace AirlineManagement.Forms
 
         private void OpenForm<T>() where T : Form
         {
-            var form = Program.Container.Resolve<T>();
-            form.ShowDialog();
+            FormAction.Try(this, "Не удалось открыть форму.", () =>
+            {
+                using var form = Program.Container.Resolve<T>();
+                form.ShowDialog(this);
+            });
         }
     }
 }

@@ -1,12 +1,16 @@
-﻿using System;
+using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace AirlineManagement.Entities
 {
     public class TicketSaleItem
     {
+        protected TicketSaleItem() { }
+
+        [Key]
         public int Id { get; private set; }
-        public int FlightId { get; private set; }       
-        public int EmployeeId { get; private set; }   
+        public int FlightId { get; private set; }
+        public int EmployeeId { get; private set; }
         public int TicketsSold { get; private set; }
         public decimal PricePerTicket { get; private set; }
 

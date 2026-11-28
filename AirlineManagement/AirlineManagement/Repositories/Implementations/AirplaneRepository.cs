@@ -1,39 +1,28 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using AirlineManagement.Data;
 using AirlineManagement.Entities;
 using AirlineManagement.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AirlineManagement.Repositories.Implementations
 {
     public class AirplaneRepository : IAirplaneRepository
     {
-        private readonly List<Airplane> _airplanes = new List<Airplane>();
+        private readonly RepositoryOperations<Airplane> _operations;
 
-        public IEnumerable<Airplane> ReadAirplanes() => _airplanes;
-
-        public Airplane ReadAirplaneById(int id) => _airplanes.FirstOrDefault(a => a.Id == id);
-
-        public void CreateAirplane(Airplane airplane)
+        public AirplaneRepository(IDbContextFactory<DataContext> contextFactory, ILogger<AirplaneRepository> logger)
         {
-            if (airplane != null)
-                _airplanes.Add(airplane);
+            _operations = new(contextFactory, logger, entity => entity.Id);
         }
 
-        public void UpdateAirplane(Airplane airplane)
-        {
-            var existing = ReadAirplaneById(airplane.Id);
-            if (existing != null)
-            {
-                _airplanes.Remove(existing);
-                _airplanes.Add(airplane);
-            }
-        }
+        public IEnumerable<Airplane> ReadAirplanes() => _operations.ReadAll(nameof(ReadAirplanes));
 
-        public void DeleteAirplane(int id)
-        {
-            var airplane = ReadAirplaneById(id);
-            if (airplane != null)
-                _airplanes.Remove(airplane);
-        }
+        public Airplane ReadAirplaneById(int id) => _operations.ReadById(nameof(ReadAirplaneById), id)!;
+
+        public void CreateAirplane(Airplane airplane) => _operations.Create(nameof(CreateAirplane), airplane);
+
+        public void UpdateAirplane(Airplane airplane) => _operations.Update(nameof(UpdateAirplane), airplane);
+
+        public void DeleteAirplane(int id) => _operations.Delete(nameof(DeleteAirplane), id);
     }
 }
