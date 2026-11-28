@@ -17,7 +17,6 @@ namespace AirlineManagement.Repositories.Implementations
 
         public IEnumerable<Flight> ReadFlights() => _operations.ReadAll(nameof(ReadFlights));
 
-        // Existing interfaces declare a non-null return, but a missing row historically returns null.
         public Flight ReadFlightById(int id) => _operations.ReadById(nameof(ReadFlightById), id)!;
 
         public void CreateFlight(Flight flight) => _operations.Create(nameof(CreateFlight), flight);

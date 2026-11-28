@@ -33,14 +33,22 @@ namespace AirlineManagement.Repositories.Implementations
                 var employeeIds = CrewIds(flightExecution);
 
                 using var transaction = context.Database.BeginTransaction();
-                // Rebuild the links from their foreign keys; a detached Employee must not be inserted.
-                flightExecution.CrewMembers.Clear();
-                foreach (var employeeId in employeeIds)
-                    flightExecution.CrewMembers.Add(FlightExecutionCrewMember.Create(employeeId));
+                int count;
+                try
+                {
+                    flightExecution.CrewMembers.Clear();
+                    foreach (var employeeId in employeeIds)
+                        flightExecution.CrewMembers.Add(FlightExecutionCrewMember.Create(employeeId));
 
-                context.FlightExecutions.Add(flightExecution);
-                var count = context.SaveChanges(); // EF propagates the generated execution ID to the links.
-                transaction.Commit();
+                    context.FlightExecutions.Add(flightExecution);
+                    count = context.SaveChanges();
+                    transaction.Commit();
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
                 _operations.LogWrite(operation, flightExecution.Id, count);
                 return count;
             });
@@ -55,24 +63,31 @@ namespace AirlineManagement.Repositories.Implementations
                 _operations.LogInput(operation, flightExecution);
                 var employeeIds = CrewIds(flightExecution);
 
-                // Prevent concurrent replacements of the same crew from merging into a third list.
                 using var transaction = context.Database.BeginTransaction(IsolationLevel.Serializable);
-                var existing = RequireExecution(context, flightExecution.Id);
-                context.Entry(existing).CurrentValues.SetValues(flightExecution);
-
-                foreach (var link in existing.CrewMembers.ToArray())
+                int count;
+                try
                 {
-                    // Retain matching links; the remaining IDs require new links.
-                    if (!employeeIds.Remove(link.EmployeeId))
-                        context.FlightExecutionCrewMembers.Remove(link);
+                    var existing = RequireExecution(context, flightExecution.Id);
+                    context.Entry(existing).CurrentValues.SetValues(flightExecution);
+
+                    foreach (var link in existing.CrewMembers.ToArray())
+                    {
+                        if (!employeeIds.Remove(link.EmployeeId))
+                            context.FlightExecutionCrewMembers.Remove(link);
+                    }
+
+                    foreach (var employeeId in employeeIds)
+                        existing.CrewMembers.Add(FlightExecutionCrewMember.Create(employeeId));
+
+                    count = context.SaveChanges();
+                    transaction.Commit();
                 }
-
-                foreach (var employeeId in employeeIds)
-                    existing.CrewMembers.Add(FlightExecutionCrewMember.Create(employeeId));
-
-                var count = context.SaveChanges();
-                transaction.Commit();
-                _operations.LogWrite(operation, existing.Id, count);
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+                _operations.LogWrite(operation, flightExecution.Id, count);
                 return count;
             });
         }
@@ -83,11 +98,20 @@ namespace AirlineManagement.Repositories.Implementations
             _operations.Run(operation, id, context =>
             {
                 using var transaction = context.Database.BeginTransaction();
-                var execution = RequireExecution(context, id);
-                context.FlightExecutionCrewMembers.RemoveRange(execution.CrewMembers.ToArray());
-                context.FlightExecutions.Remove(execution);
-                var count = context.SaveChanges();
-                transaction.Commit();
+                int count;
+                try
+                {
+                    var execution = RequireExecution(context, id);
+                    context.FlightExecutionCrewMembers.RemoveRange(execution.CrewMembers.ToArray());
+                    context.FlightExecutions.Remove(execution);
+                    count = context.SaveChanges();
+                    transaction.Commit();
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
                 _operations.LogWrite(operation, id, count);
                 return count;
             });

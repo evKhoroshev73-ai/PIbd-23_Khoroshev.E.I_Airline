@@ -127,7 +127,6 @@ namespace AirlineManagement.Repositories.Implementations
 
         public void LogInput(string operation, TEntity entity)
         {
-            // Only known domain fields are logged. Employee names and connection details stay out of Logs.
             object input = entity switch
             {
                 Airplane a => new { a.Model, a.Capacity },
@@ -150,7 +149,6 @@ namespace AirlineManagement.Repositories.Implementations
         private static TEntity FindRequired(DataContext context, int id) =>
             context.Set<TEntity>().Find(id) ?? throw Missing(id);
 
-        // Database exception messages can contain parameter values or connection details.
         private void LogFailure(string operation, int? id, Exception exception, string? sqlState) =>
             _logger.LogError("Сбой {Operation}; идентификатор {EntityId}, тип ошибки {ErrorType}, SQLSTATE {SqlState}",
                 operation, id, exception.GetType().Name, sqlState);

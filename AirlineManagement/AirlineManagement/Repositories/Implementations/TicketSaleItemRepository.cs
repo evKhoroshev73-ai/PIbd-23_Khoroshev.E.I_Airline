@@ -17,7 +17,6 @@ namespace AirlineManagement.Repositories.Implementations
 
         public IEnumerable<TicketSaleItem> ReadTicketSaleItems() => _operations.ReadAll(nameof(ReadTicketSaleItems));
 
-        // Existing interfaces declare a non-null return, but a missing row historically returns null.
         public TicketSaleItem ReadTicketSaleItemById(int id) => _operations.ReadById(nameof(ReadTicketSaleItemById), id)!;
 
         public void CreateTicketSaleItem(TicketSaleItem ticketSaleItem) => _operations.Create(nameof(CreateTicketSaleItem), ticketSaleItem);
